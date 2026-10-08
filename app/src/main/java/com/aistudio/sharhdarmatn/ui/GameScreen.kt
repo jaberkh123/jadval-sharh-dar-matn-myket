@@ -187,8 +187,11 @@ fun GameScreen(viewModel: PuzzleViewModel) {
             }
 
             // ─────────── جدول ───────────
-            // v2.0: پدینگِ پایین فقط وقتی کیبورد (و نوارِ سؤالِ همراهش) باز است؛
-            // وقتی کیبورد بسته است جدول آزاد است و پایین‌تر، جایگاهِ تبلیغِ همسان در چیدمان است
+            // پدینگِ پایین فقط وقتی کیبورد (و نوارِ سؤالِ همراهش) باز است؛
+            // v2.3: تبلیغِ همسان دیگر overlay نیست و در چیدمان، زیرِ جدول نشسته —
+            // جدولِ weight(1f) فقط تا بالای تبلیغ جا می‌گیرد و چون baseCell از
+            // ارتفاعِ همین ناحیه محاسبه می‌شود، در صورت لزوم خودش کمی کوچک‌تر
+            // می‌شود تا تبلیغ کامل جا بگیرد (تبلیغ هرگز روی جدول نمی‌آید)
             val gridBottomInset by androidx.compose.animation.core.animateDpAsState(
                 targetValue = if (viewModel.isKeyboardVisible && viewModel.activeWord != null)
                     questionBarHeightDp else 0.dp,
@@ -210,21 +213,19 @@ fun GameScreen(viewModel: PuzzleViewModel) {
                 )
             }
 
+            // ── v2.3: جایگاه «تبلیغ همسان» در چیدمان (in-flow) — زیرِ جدول ──
+            // همیشه دیده می‌شود و جدول را بالا می‌برد؛ هنگام باز شدن کیبورد،
+            // پنلِ سؤال+کیبورد (overlay) روی آن می‌نشیند ولی نمونهٔ تبلیغ زنده
+            // می‌ماند و دوباره لود نمی‌شود (قاعدهٔ «لودِ یک‌بار per ورود»).
+            NativeAdSlot()
+
             Spacer(modifier = Modifier.navigationBarsPadding())
         }
 
-        // ─────────── پنلِ پایینِ صفحه (v2.0): تبلیغِ همسان + نوارِ سؤالِ همراهِ کیبورد ───────────
-        // جایگاه «تبلیغ همسان» (Native Ad) در محلِ قبلیِ نوارِ سؤال، همیشه پایین می‌نشیند؛
-        // نوارِ سؤال + کیبورد «همراهِ هم» بالا و پایین می‌روند (یک واحدِ متحرک) و هنگامِ
-        // باز بودن، رویِ جایگاهِ تبلیغ می‌نشینند (جایِ بیشتری برای جدول).
+        // ─────────── نوارِ سؤال + کیبورد — یک واحدِ متحرک (overlay از پایین) ───────────
+        // با هم می‌آیند، با هم می‌روند؛ هنگامِ باز بودن رویِ جایگاهِ تبلیغِ همسان
+        // می‌نشینند (جایِ بیشتری برای جدول) و با بسته شدن دوباره تبلیغ پیدا می‌شود.
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-            // ۱) جایگاهِ تبلیغ همسان — همیشه در پایین (محلِ قبلیِ نوارِ سؤال)
-            Column(modifier = Modifier.align(Alignment.BottomCenter)) {
-                NativeAdSlot()
-                Spacer(Modifier.navigationBarsPadding())
-            }
-
-            // ۲) نوارِ سؤال + کیبورد — یک واحدِ متحرک: با هم می‌آیند، با هم می‌روند
             Column(modifier = Modifier.align(Alignment.BottomCenter)) {
                 AnimatedVisibility(
                     visible = viewModel.isKeyboardVisible && viewModel.activeWord != null,

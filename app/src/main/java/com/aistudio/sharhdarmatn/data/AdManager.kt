@@ -46,12 +46,11 @@ object AdsConfig {
     const val BASE_URL = "https://golestanjaber.ir"
 
     /**
-     * slug همین اپ در پنل تبلیغات (اپ‌ها → تب «اپ‌ها»).
-     * ⚠️ تا وقتی اپ در پنل ثبت نشده باشد سرور {"error":"app_not_found"} می‌دهد و
-     * بنر بی‌صدا مخفی می‌شود (هیچ خطایی در UI نیست) — بعد از ثبت در پنل، طی
-     * حداکثر ۱۵ دقیقه (یا اولین foreground) بنر خودش بالا می‌آید.
+     * slug همین اپ در پنل تبلیغات — آدرس رسمی از مالک:
+     * https://golestanjaber.ir/api/v2/api.php?app=sharh-dar-matn
+     * (تأیید شده با درخواست واقعی — پاسخ کامل با icons برمی‌گردد)
      */
-    const val APP_SLUG = "sharh-dar-matn-mashahir"
+    const val APP_SLUG = "sharh-dar-matn"
 
     /** فقط اگر در پنل برای این اپ کلید تعریف شده باشد مقدار بدهید؛ در غیر این صورت خالی بماند. */
     const val API_KEY: String = ""
@@ -92,8 +91,11 @@ object AdManager {
      * کلید اصلی فعال‌سازی تبلیغات.
      * true = اپ به API تبلیغات وصل می‌شود و بنر آیکونی را نمایش می‌دهد.
      * false = هیچ درخواستی زده نمی‌شود و هیچ بخشی از UI رندر نمی‌شود.
+     *
+     * ⚠️ نسخهٔ مایکت (v2.3 — به درخواست مالک): تبلیغات اسلاگ‌دارِ خودمان فعلاً
+     * غیرفعال است — فقط ادیوری. برای فعال‌سازی کافی است true شود.
      */
-    const val ADS_ENABLED = true
+    const val ADS_ENABLED = false
 
     /** وضعیت جاری که کامپوزبل AdIconsBanner از آن استفاده می‌کند. */
     var state by mutableStateOf<AdsUiState>(AdsUiState.Loading)

@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -150,7 +151,10 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
     val lastPuzzle = lastPlayed?.let {
         com.aistudio.sharhdarmatn.data.SharhPuzzleData.getPuzzleById(it.id)
     }
-    val canContinue = lastPuzzle != null && lastPlayed?.isCompleted == false
+    // v2.3: دکمهٔ «ادامهٔ جدول» فقط وقتی جدولِ «نیمه‌کارهٔ» واقعی داریم — یعنی
+    // حداقل یک واژه حل شده ولی جدول کامل نشده باشد (جدولِ لمس‌نشده دکمه نمی‌گیرد).
+    val solvedCount = lastPuzzle?.let { solvedWordsFromProgress(it, lastPlayed?.userInput) } ?: 0
+    val canContinue = lastPuzzle != null && lastPlayed?.isCompleted == false && solvedCount > 0
 
     BoxWithConstraints(
         modifier = Modifier
@@ -214,10 +218,10 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
 
                 // دکمهٔ «ادامهٔ جدول» — کوچک‌تر از شهر جدول: ردیف فشردهٔ ۶۴dp
                 if (canContinue && lastPuzzle != null) {
-                    val solved = solvedWordsFromProgress(lastPuzzle, lastPlayed?.userInput)
+                    val solved = solvedCount
                     Card(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxWidth(0.72f)
                             .height(64.dp)
                             .shadow(4.dp, RoundedCornerShape(18.dp))
                             .clip(RoundedCornerShape(18.dp))
@@ -294,7 +298,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
             // ── دکمهٔ اصلی: ورود به بازی ──
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(0.72f)
                     .height(76.dp)
                     .shadow(6.dp, RoundedCornerShape(20.dp))
                     .clickable {
@@ -355,7 +359,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
             // ── دکمهٔ خروج (ثانویه — مثل شهر جدول) ──
             Card(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(0.72f)
                     .height(56.dp)
                     .clickable { (context as? android.app.Activity)?.finish() },
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
@@ -399,7 +403,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                 fontFamily = PersianFontFamily
             )
             Text(
-                text = "نسخه ۲٫۲".toPersianDigits(),
+                text = "نسخه ۲٫۳".toPersianDigits(),
                 textAlign = TextAlign.Center,
                 fontFamily = PersianFontFamily,
                 style = MaterialTheme.typography.bodySmall.copy(
@@ -436,19 +440,28 @@ fun HomeScreen(viewModel: PuzzleViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.EmojiEvents,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(30.dp)
-                )
-                Spacer(Modifier.width(8.dp))
+                // v2.3: دکمهٔ بازگشت به صفحهٔ اول
+                IconButton(
+                    onClick = { viewModel.handleBackPress() },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White, shape = CircleShape)
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "بازگشت به صفحهٔ اول",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
                 Column {
                     Text(
                         text = "شرح در متن مشاهیر",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Black,
-                            fontSize = 22.sp
+                            fontSize = 20.sp
                         )
                     )
                     Text(
@@ -763,7 +776,7 @@ fun SettingsScreen(viewModel: PuzzleViewModel) {
         Spacer(Modifier.weight(1f))
 
         Text(
-            text = "شرح در متن مشاهیر | نسخه ۲٫۲",
+            text = "شرح در متن مشاهیر | نسخه ۲٫۳",
             style = MaterialTheme.typography.bodySmall.copy(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             ),
