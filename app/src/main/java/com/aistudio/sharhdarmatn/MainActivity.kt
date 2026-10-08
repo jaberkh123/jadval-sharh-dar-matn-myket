@@ -9,14 +9,19 @@ import com.aistudio.sharhdarmatn.ui.AppContent
 import com.aistudio.sharhdarmatn.ui.PuzzleViewModel
 import com.adivery.sdk.Adivery
 import com.adivery.sdk.AdiveryListener
+import com.aistudio.sharhdarmatn.data.AdManager
+import androidx.lifecycle.lifecycleScope
 
 /**
  * جدول شرح در متن — اکتیویتی اصلی
  *
- * نسخهٔ مایکت — تبلیغات (v2.1) با شبکهٔ «ادیوری» با پلیس‌منت‌های مایکت:
- *  - همسان: پایین صفحهٔ حل جدول (NativeAdSlot — لود یک بار در هر ورود به صفحه)
- *  - میان‌صفحه‌ای: هر ۱۰ ورود به صفحهٔ حل جدول
- *  - بازگشت به برنامه (App Open): یک بار در میان — هر بار که کاربر برمی‌گردد تبلیغ نشان داده نمی‌شود
+ * نسخهٔ مایکت — تبلیغات با دو شبکه (v2.2):
+ *  ۱) ادیوری با پلیس‌منت‌های مایکت:
+ *   - همسان: پایین صفحهٔ حل جدول (NativeAdSlot — لود یک بار در هر ورود به صفحه)
+ *   - میان‌صفحه‌ای: هر ۱۰ ورود به صفحهٔ حل جدول
+ *   - بازگشت به برنامه (App Open): یک بار در میان — هر بار که کاربر برمی‌گردد تبلیغ نشان داده نمی‌شود
+ *  ۲) شبکهٔ «تبلیغ» خودمان (روش تبلیغ / ravesh-tabligh) — بنر آیکونی در وسطِ صفحهٔ اول
+ *   و بالای صفحهٔ انتخاب جدول؛ init در onCreate و onAppForegrounded در onResume (⭐ ناجیِ بنر مُرده)
  */
 class MainActivity : ComponentActivity() {
     private val viewModel: PuzzleViewModel by viewModels()
@@ -65,9 +70,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // ⭐ روش تبلیغ: با هر بازگشت به foreground، بنر Hidden فوراً دوباره fetch می‌کند
+        // (با گارد ۶۰ ثانیه) — بدون این، بعد از هر قطعی تبلیغ تا ساعت‌ها برنمی‌گردد
+        AdManager.onAppForegrounded()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // راه‌اندازی شبکهٔ «تبلیغ» خودمان (روش تبلیغ) — حلقهٔ fetch + state machine
+        AdManager.init(applicationContext, lifecycleScope)
 
         // راه‌اندازی ادیوری + آماده‌سازی اولیهٔ میان‌صفحه‌ای و بازگشت به برنامه
         try {

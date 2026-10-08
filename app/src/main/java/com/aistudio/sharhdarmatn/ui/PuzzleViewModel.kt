@@ -22,9 +22,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-/** صفحات بازی */
+/** صفحات بازی — از v2.2 صفحهٔ اول (Landing) جدا از صفحهٔ انتخاب جدول است */
 enum class Screen {
-    HOME,
+    HOME,      // صفحهٔ اول (مثل شهر جدول: برند + ادامهٔ جدول + تبلیغ + ورود به بازی)
+    PUZZLES,   // صفحهٔ انتخاب جدول (لیست جدول‌ها)
     GAME,
     SETTINGS,
     HELP
@@ -50,7 +51,6 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
     var isSoundEnabled by mutableStateOf(repository.isSoundEnabled())
 
     private val sharedPrefs = application.getSharedPreferences("sharh_dm_prefs", android.content.Context.MODE_PRIVATE)
-    private var hasCheckedLastActive = false
 
     var globalBonusCoins by mutableStateOf(0)
         private set
@@ -192,10 +192,8 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
             repository.allProgress.collectLatest { progressList ->
                 val progressMap = progressList.associateBy { it.id }
                 _allProgress.value = progressMap
-                if (!hasCheckedLastActive) {
-                    hasCheckedLastActive = true
-                    checkAndAutoResumeActivePuzzle()
-                }
+                // از v2.2: ورود خودکار به جدولِ نیمه‌کارهٔ آخر حذف شد — صفحهٔ اول با
+                // دکمهٔ «ادامهٔ جدول» این کار را می‌کند (مثل شهر جدول)
             }
         }
     }
@@ -219,17 +217,21 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
         SoundManager.playClick()
         return when (currentScreen) {
             Screen.HOME -> false // خروج پیش‌فرض سیستم
+            Screen.PUZZLES -> {
+                navigateTo(Screen.HOME)
+                true
+            }
             Screen.GAME -> {
                 if (isKeyboardVisible) {
                     // مثل کیبورد واقعی: اول کیبورد بسته می‌شود، بعد از جدول خارج می‌شویم
                     hideKeyboard()
                 } else {
-                    navigateTo(Screen.HOME)
+                    navigateTo(Screen.PUZZLES)
                 }
                 true
             }
             Screen.SETTINGS -> {
-                navigateTo(Screen.HOME)
+                navigateTo(Screen.PUZZLES)
                 true
             }
             Screen.HELP -> {
@@ -716,7 +718,7 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
             hintDeductions = 0
             showCompletedDialog = false
             isKeyboardVisible = false
-            navigateTo(Screen.HOME)
+            navigateTo(Screen.PUZZLES)
         }
     }
 
@@ -739,15 +741,6 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     // ───────────────────────── ادامهٔ بازی نیمه‌تمام ─────────────────────────
-    private fun checkAndAutoResumeActivePuzzle() {
-        val lastActiveId = sharedPrefs.getString("last_active_puzzle_id", null) ?: return
-        val puzzle = SharhPuzzleData.getPuzzleById(lastActiveId) ?: return
-        val progress = _allProgress.value[lastActiveId] ?: return
-        if (!progress.isCompleted) {
-            startPuzzle(puzzle)
-        }
-    }
-
     override fun onCleared() {
         super.onCleared()
         stopTimer()

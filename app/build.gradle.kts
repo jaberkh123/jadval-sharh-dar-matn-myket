@@ -14,8 +14,8 @@ android {
     applicationId = "com.aistudio.sharhdarmatn"
     minSdk = 24
     targetSdk = 36
-    versionCode = 12
-    versionName = "2.1"
+    versionCode = 13
+    versionName = "2.2"
   }
 
   signingConfigs {
@@ -84,4 +84,7 @@ dependencies {
   ksp(libs.androidx.room.compiler)
   // v2.1: تبلیغات ادیوری (همسان / میان‌صفحه‌ای / بازگشت به برنامه)
   implementation(libs.adivery)
+  // v2.2: تبلیغات خودمان — شبکهٔ «تبلیغ» (روش تبلیغ): coil برای AsyncImage + okhttp برای fetch
+  implementation(libs.coil.compose)
+  implementation(libs.okhttp)
 }

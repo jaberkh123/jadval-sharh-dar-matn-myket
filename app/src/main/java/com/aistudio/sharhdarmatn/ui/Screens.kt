@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,8 +19,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.MonetizationOn
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -27,6 +31,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -70,21 +76,8 @@ fun puzzlePhotoPainter(resName: String): androidx.compose.ui.graphics.painter.Pa
 }
 
 /**
- * جایگاه تبلیغ (placeholder) — طبق درخواست، تبلیغات کاملاً حذف شده‌اند و هیچ SDK یا
- * آی‌دی تبلیغی لود نمی‌شود؛ فقط فضای جایگاه در UI حفظ شده تا بعداً با آی‌دی جدید،
- * این‌جا مستقیماً بنر جدید قرار بگیرد.
+ * (قبلاً placeholder بود — از v2.2 بنر واقعی تبلیغات خودمان AdIconsBanner در همان‌جا نشسته است)
  */
-@Composable
-fun AdPlaceholderBox(height: Dp, modifier: Modifier = Modifier) {
-    // TODO: بعد از دریافت آی‌دی تبلیغ جدید، بنر این‌جا قرار می‌گیرد (فضا رزرو شده است)
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-            .clip(RoundedCornerShape(14.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.22f))
-    )
-}
 
 // ───────────────────────── ریشهٔ برنامه ─────────────────────────
 
@@ -119,7 +112,8 @@ fun AppContent(viewModel: PuzzleViewModel) {
                         label = "ScreenTransition"
                     ) { screen ->
                         when (screen) {
-                            Screen.HOME -> HomeScreen(viewModel)
+                            Screen.HOME -> LandingScreen(viewModel)
+                            Screen.PUZZLES -> HomeScreen(viewModel)
                             Screen.GAME -> GameScreen(viewModel)
                             Screen.SETTINGS -> SettingsScreen(viewModel)
                             Screen.HELP -> HelpScreen(viewModel)
@@ -135,7 +129,290 @@ fun AppContent(viewModel: PuzzleViewModel) {
     }
 }
 
-// ───────────────────────── Home ─────────────────────────
+// ───────────────────────── صفحهٔ اول (Landing — مثل شهر جدول) ─────────────────────────
+
+/**
+ * صفحهٔ اول بازی (v2.2) — ساختار مثل «شهر جدول»:
+ *  • سربرگ برند: آیکون اپ + نام + شعار
+ *  • دکمهٔ «ادامهٔ جدول» برای جدول نیمه‌کاره — کوچک‌تر از شهر جدول (ردیف فشرده ۶۴dp)
+ *  • بنر تبلیغات خودمان (روش تبلیغ) در وسط صفحه — ثابت و همیشه دیده‌شده
+ *  • دکمهٔ اصلی «ورود به بازی» → صفحهٔ انتخاب جدول
+ *  • دکمهٔ «خروج»
+ *  • بدون دکمهٔ راهنمایی (طبق درخواست)
+ */
+@Composable
+fun LandingScreen(viewModel: PuzzleViewModel) {
+    val progressMap by viewModel.allProgress.collectAsState()
+    val context = LocalContext.current
+
+    // آخرین جدول نیمه‌کاره برای دکمهٔ «ادامهٔ جدول»
+    val lastPlayed = progressMap.values.maxByOrNull { it.lastPlayedTime }
+    val lastPuzzle = lastPlayed?.let {
+        com.aistudio.sharhdarmatn.data.SharhPuzzleData.getPuzzleById(it.id)
+    }
+    val canContinue = lastPuzzle != null && lastPlayed?.isCompleted == false
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // ── بخش بالایی اسکرول‌شونده (برند + ادامهٔ جدول) ──
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Spacer(Modifier.height(6.dp))
+
+                // آیکون اپ
+                Image(
+                    painter = painterResource(com.aistudio.sharhdarmatn.R.drawable.ic_brand),
+                    contentDescription = "آیکون شرح در متن مشاهیر",
+                    modifier = Modifier
+                        .size(108.dp)
+                        .shadow(6.dp, RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(24.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                // سربرگ برند
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "شرح در متن مشاهیر",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 26.sp
+                        )
+                    )
+                    Text(
+                        text = "شرحِ هر واژه، درون خودِ جدول است",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            fontSize = 12.sp
+                        ),
+                        fontFamily = PersianFontFamily
+                    )
+                }
+
+                // دکمهٔ «ادامهٔ جدول» — کوچک‌تر از شهر جدول: ردیف فشردهٔ ۶۴dp
+                if (canContinue && lastPuzzle != null) {
+                    val solved = solvedWordsFromProgress(lastPuzzle, lastPlayed?.userInput)
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .shadow(4.dp, RoundedCornerShape(18.dp))
+                            .clip(RoundedCornerShape(18.dp))
+                            .clickable {
+                                SoundManager.playClick()
+                                viewModel.startPuzzle(lastPuzzle)
+                            },
+                        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+                        shape = RoundedCornerShape(18.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.linearGradient(
+                                        colors = listOf(
+                                            MaterialTheme.colorScheme.primary,
+                                            MaterialTheme.colorScheme.secondary
+                                        )
+                                    )
+                                )
+                                .padding(horizontal = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .background(Color.White.copy(alpha = 0.22f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "ادامهٔ جدول",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "ادامهٔ جدول",
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White,
+                                        fontSize = 15.sp
+                                    ),
+                                    fontFamily = PersianFontFamily
+                                )
+                                Text(
+                                    text = "${solved.toString().toPersianDigits()} از ${lastPuzzle.words.size.toString().toPersianDigits()} واژه حل شده",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        fontSize = 11.sp
+                                    ),
+                                    fontFamily = PersianFontFamily
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.ChevronLeft,
+                                contentDescription = null,
+                                tint = Color.White.copy(alpha = 0.8f),
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── بنر تبلیغات خودمان (روش تبلیغ) — وسط صفحه، ثابت و همیشه دیده‌شده ──
+            AdIconsBanner()
+
+            Spacer(Modifier.height(14.dp))
+
+            // ── دکمهٔ اصلی: ورود به بازی ──
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(76.dp)
+                    .shadow(6.dp, RoundedCornerShape(20.dp))
+                    .clickable {
+                        SoundManager.playClick()
+                        viewModel.navigateTo(Screen.PUZZLES)
+                    },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "ورود به بازی",
+                            textAlign = TextAlign.Center,
+                            fontFamily = PersianFontFamily,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 18.sp
+                            )
+                        )
+                        Text(
+                            text = "انتخاب جدول و شروع چالش",
+                            textAlign = TextAlign.Center,
+                            fontFamily = PersianFontFamily,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
+                                fontWeight = FontWeight.Normal,
+                                fontSize = 11.sp
+                            )
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // ── دکمهٔ خروج (ثانویه — مثل شهر جدول) ──
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .clickable { (context as? android.app.Activity)?.finish() },
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "خروج",
+                        fontFamily = PersianFontFamily,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // پانوشت برند
+            Text(
+                text = "بازی شرح در متن مشاهیر",
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                ),
+                fontFamily = PersianFontFamily
+            )
+            Text(
+                text = "نسخه ۲٫۲".toPersianDigits(),
+                textAlign = TextAlign.Center,
+                fontFamily = PersianFontFamily,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.sp
+                )
+            )
+        }
+    }
+}
+
+// ───────────────────────── صفحهٔ انتخاب جدول ─────────────────────────
 
 @Composable
 fun HomeScreen(viewModel: PuzzleViewModel) {
@@ -216,8 +493,8 @@ fun HomeScreen(viewModel: PuzzleViewModel) {
             }
         }
 
-        // جایگاه تبلیغ صفحهٔ اصلی (فضا حفظ شده — بدون لود هیچ تبلیغی)
-        AdPlaceholderBox(height = 64.dp)
+        // بنر تبلیغات خودمان (روش تبلیغ) — بالای صفحهٔ انتخاب جدول
+        AdIconsBanner()
 
         Spacer(Modifier.height(4.dp))
 
@@ -486,7 +763,7 @@ fun SettingsScreen(viewModel: PuzzleViewModel) {
         Spacer(Modifier.weight(1f))
 
         Text(
-            text = "شرح در متن مشاهیر | نسخه ۲٫۱",
+            text = "شرح در متن مشاهیر | نسخه ۲٫۲",
             style = MaterialTheme.typography.bodySmall.copy(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             ),
