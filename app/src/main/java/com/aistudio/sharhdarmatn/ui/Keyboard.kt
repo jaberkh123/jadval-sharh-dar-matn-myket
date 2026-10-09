@@ -29,18 +29,20 @@ import com.aistudio.sharhdarmatn.ui.theme.LocalDarkTheme
 import kotlinx.coroutines.delay
 
 /**
- * کیبورد فارسی روی‌صفحه — دقیقاً با همان طراحی و رفتار بازی شهر جدول:
- * همیشه ۱۵ کلید تولید می‌شود که «حتماً تمام حروفِ لاین (واژه) فعال» را دارد؛
- * بقیهٔ کلیدها حروف حواس‌پرت‌کن تصادفی (ولی قطعی و ثابت برای هر واژه) هستند.
- *
- * کیبورد فقط وقتی روی یک لاین کلیک شود نمایش داده می‌شود (بالا‌تنهٔ آن را
- * GameScreen به‌صورت overlay در پایین صفحه نشان می‌دهد).
+ * کیبورد فارسی روی‌صفحه (بازطراحیِ v2.4 — قاعدهٔ کاربر):
+ * به‌جای ۱۵ حرف، ۱۱ حرف در «یک ردیفِ واحد» + کلید حذف — با فونتِ بزرگ‌تر (۲۲sp).
+ * حداکثر حروفِ یکتای جواب‌های بازی ۷ است، پس ۱۱ همیشه تمام حروفِ لاین را پوشش می‌دهد
+ * (اگر روزی جوابی حروفِ یکتای بیشتری داشت، خودکار تعداد بیشتر می‌شود).
+ * کلیدها ارتفاعِ پنلِ ثابتِ کیبورد (۱/۱۰ صفحه) را پر می‌کنند.
+ * کیبورد فقط وقتی روی یک لاین کلیک شود نمایش داده می‌شود (پنلِ آن را GameScreen
+ * به‌صورت overlay روی تبلیغِ همسان نشان می‌دهد).
  */
 @Composable
 fun PersianOnScreenKeyboard(
     word: SharhWord? = null,
     onCharTyped: (Char) -> Unit,
-    onBackspace: () -> Unit = {}
+    onBackspace: () -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val allPersianChars = remember {
         listOf(
@@ -62,7 +64,8 @@ fun PersianOnScreenKeyboard(
             ?.toSet() ?: emptySet()
     }
 
-    // تولید دقیقاً ۱۵ حرف که همهٔ حروف جواب فعلی را دارند
+    // تولید حروفِ کیبورد (v2.4): هدف ۱۱ حرف — حداکثر حروفِ یکتای جواب‌ها ۷ است
+    val targetCount = maxOf(11, answerChars.size)
     val keyboardLetters = remember(word?.id, word?.word) {
         val list = mutableListOf<Char>()
         list.addAll(answerChars)
@@ -72,53 +75,33 @@ fun PersianOnScreenKeyboard(
 
         val distractors = allPersianChars.filter { it !in list }.shuffled(random)
         for (char in distractors) {
-            if (list.size >= 15) break
+            if (list.size >= targetCount) break
             list.add(char)
         }
 
-        while (list.size < 15) {
+        while (list.size < targetCount) {
             list.add(allPersianChars.random(random))
         }
 
-        list.take(15).shuffled(random)
+        list.take(targetCount).shuffled(random)
     }
 
-    val row1 = keyboardLetters.take(8)
-    val row2Letters = keyboardLetters.drop(8).take(7)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+    // v2.4: یک ردیفِ واحد — ۱۱ کلیدِ حرف + کلیدِ حذف (سمتِ چپ)؛ فونتِ بزرگ‌تر
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        // ردیف ۱ (۸ کلید)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            for (char in row1) {
-                KeyboardKey(char = char, onClick = { onCharTyped(char) }, modifier = Modifier.weight(1f))
-            }
+        for (char in keyboardLetters) {
+            KeyboardKey(char = char, onClick = { onCharTyped(char) }, modifier = Modifier.weight(1f))
         }
-
-        // ردیف ۲ (۷ حرف + ۱ کلید حذف = ۸ کلید)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            for (char in row2Letters) {
-                KeyboardKey(char = char, onClick = { onCharTyped(char) }, modifier = Modifier.weight(1f))
-            }
-            KeyboardActionKey(
-                icon = Icons.Default.Close,
-                contentDescription = "حذف حرف",
-                onClick = onBackspace,
-                modifier = Modifier.weight(1f),
-                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-            )
-        }
+        KeyboardActionKey(
+            icon = Icons.Default.Close,
+            contentDescription = "حذف حرف",
+            onClick = onBackspace,
+            modifier = Modifier.weight(1f),
+            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+        )
     }
 }
 
@@ -140,14 +123,14 @@ fun KeyboardKey(char: Char, onClick: () -> Unit, modifier: Modifier = Modifier) 
 
     Box(
         modifier = modifier
-            .height(44.dp)
+            .fillMaxHeight()
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(0.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+            .border(0.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
             .clickable(
                 onClick = {
                     isPressed = true
@@ -158,7 +141,7 @@ fun KeyboardKey(char: Char, onClick: () -> Unit, modifier: Modifier = Modifier) 
     ) {
         Text(
             text = if (char == ' ') "␣" else char.toString(),
-            fontSize = 18.sp,
+            fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
@@ -190,14 +173,14 @@ fun KeyboardActionKey(
 
     Box(
         modifier = modifier
-            .height(44.dp)
+            .fillMaxHeight()
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(color)
-            .border(0.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
+            .border(0.5.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
             .clickable(
                 onClick = {
                     isPressed = true
@@ -210,7 +193,7 @@ fun KeyboardActionKey(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(24.dp)
         )
     }
 }

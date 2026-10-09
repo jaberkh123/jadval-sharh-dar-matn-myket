@@ -81,8 +81,18 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
 
     private var lastDirection: String = "LEFT"
 
-    /** کی‌بورد فقط پس از کلیک روی یک لاین ظاهر می‌شود */
+    /** کی‌بورد فقط پس از کلیک روی یک لاین (خانهٔ حرف‌دار) ظاهر می‌شود */
     var isKeyboardVisible by mutableStateOf(false)
+        private set
+
+    /**
+     * v2.4 — نوارِ سؤال مستقل از کیبورد است:
+     *  • کلیک روی خانهٔ سؤال (سرنخ) → فقط نوارِ سؤال بالا می‌آید (بدون کیبورد)
+     *  • کلیک روی خانهٔ حرف‌دار (لاین) → فقط کیبورد بالا می‌آید
+     *  • دکمهٔ «کیبورد» روی نوارِ سؤال → کیبورد هم بالای همان لاین باز می‌شود
+     *  • جابه‌جا کردن جدول → هر دو محو می‌شوند (حالت عادی: فقط تبلیغ همسان)
+     */
+    var isQuestionBarVisible by mutableStateOf(false)
         private set
 
     var timerSeconds by mutableStateOf(0L)
@@ -222,7 +232,7 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
                 true
             }
             Screen.GAME -> {
-                if (isKeyboardVisible) {
+                if (isKeyboardVisible || isQuestionBarVisible) {
                     // مثل کیبورد واقعی: اول کیبورد بسته می‌شود، بعد از جدول خارج می‌شویم
                     hideKeyboard()
                 } else {
@@ -272,6 +282,7 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
         // انتخاب اولین واژه (بدون نمایش کی‌بورد — کی‌بورد فقط با کلیک کاربر می‌آید)
         selectFirstAvailableWord(puzzle)
         isKeyboardVisible = false
+        isQuestionBarVisible = false
 
         if (!repository.hasShownOnboarding()) {
             showOnboarding = true
@@ -341,8 +352,9 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
         activeCol = col
         lastDirection = newWord.direction
 
-        // ✨ کی‌بورد فقط همین‌جا ظاهر می‌شود (کلیک روی لاین)
+        // ✨ v2.4: کلیک روی لاین → «فقط» کیبورد (نوارِ سؤال جمع می‌شود)
         isKeyboardVisible = true
+        isQuestionBarVisible = false
     }
 
     /**
@@ -381,9 +393,23 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
         activeCol = chosen.cells.first().second
         lastDirection = chosen.direction
 
-        // قاعدهٔ v1.9: سرنخ مثل لاین عمل می‌کند — کیبورد همان‌جا بالای آن می‌آید
-        // و نوارِ سؤال در پایین (بالای کیبورد) سؤالِ همین لاین را نشان می‌دهد
-        isKeyboardVisible = true
+        // ✨ v2.4: کلیک روی سؤال → «فقط» نوارِ سؤال (کیبورد جمع می‌شود؛ با دکمهٔ
+        // «کیبورد» روی نوار یا کلیک روی لاین باز می‌شود)
+        isKeyboardVisible = false
+        isQuestionBarVisible = true
+    }
+
+    /**
+     * v2.4 — دکمهٔ «کیبورد» روی نوارِ سؤال: کیبورد را بالای همان لاین باز می‌کند؛
+     * نوارِ سؤال سر جایش می‌ماند (هر دو روی تبلیغ همسان می‌نشینند).
+     */
+    fun showKeyboardFromQuestionBar() {
+        if (activeWord != null) isKeyboardVisible = true
+    }
+
+    /** v2.4 — دکمهٔ «کیبورد» وقتی کیبورد باز است (بستنِ فقط کیبورد؛ نوارِ سؤال می‌ماند) */
+    fun hideKeyboardPanel() {
+        isKeyboardVisible = false
     }
 
     /** شمارهٔ جدولِ فعال در فهرست (۱-بنیاد) — برای نمایشِ «جدول ۳» بدونِ لو رفتنِ نام */
@@ -396,6 +422,7 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
      */
     fun hideKeyboard() {
         if (isKeyboardVisible) isKeyboardVisible = false
+        if (isQuestionBarVisible) isQuestionBarVisible = false
     }
 
     // ───────────────────────── ورودی کی‌بورد ─────────────────────────
@@ -519,6 +546,7 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
 
             showCompletedDialog = true
             isKeyboardVisible = false
+            isQuestionBarVisible = false
             saveCurrentProgress(completed = true)
             return true
         } else if (isGridFullyFilled()) {
@@ -718,6 +746,7 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
             hintDeductions = 0
             showCompletedDialog = false
             isKeyboardVisible = false
+            isQuestionBarVisible = false
             navigateTo(Screen.PUZZLES)
         }
     }

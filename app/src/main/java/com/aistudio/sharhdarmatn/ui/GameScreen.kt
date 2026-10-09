@@ -2,8 +2,10 @@ package com.aistudio.sharhdarmatn.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material.icons.filled.Psychology
@@ -28,10 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aistudio.sharhdarmatn.data.SharhCell
@@ -72,10 +77,14 @@ fun GameScreen(viewModel: PuzzleViewModel) {
     // ارتفاع واقعی کیبورد برحسب پیکسل — برای محاسبهٔ اسکرول خودکار
     val keyboardHeightPx = remember { mutableFloatStateOf(0f) }
 
-    // ارتفاع نوارِ سؤال (v2.0) — فقط وقتی کیبورد باز است جدول با این فاصله از پایین جا می‌گیرد تا زیرِ نوار نرود
+    // ارتفاع نوارِ سؤال — برای اسکرول خودکار SharhGrid
     val questionBarHeightPx = remember { mutableFloatStateOf(0f) }
     val density = androidx.compose.ui.platform.LocalDensity.current
     val questionBarHeightDp = with(density) { questionBarHeightPx.floatValue.toDp() }
+
+    // v2.4 — ارتفاعِ ثابتِ پنل‌های پایین (نوارِ سؤال و کیبورد): هر دو هم‌اندازه‌اند؛
+    // مثال کاربر: یک‌دهمِ طولِ صفحه و تمامِ عرض — و رویِ تبلیغِ همسان می‌نشینند
+    val panelHeightDp = (LocalConfiguration.current.screenHeightDp / 10).dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -187,14 +196,17 @@ fun GameScreen(viewModel: PuzzleViewModel) {
             }
 
             // ─────────── جدول ───────────
-            // پدینگِ پایین فقط وقتی کیبورد (و نوارِ سؤالِ همراهش) باز است؛
             // v2.3: تبلیغِ همسان دیگر overlay نیست و در چیدمان، زیرِ جدول نشسته —
-            // جدولِ weight(1f) فقط تا بالای تبلیغ جا می‌گیرد و چون baseCell از
-            // ارتفاعِ همین ناحیه محاسبه می‌شود، در صورت لزوم خودش کمی کوچک‌تر
-            // می‌شود تا تبلیغ کامل جا بگیرد (تبلیغ هرگز روی جدول نمی‌آید)
+            // جدولِ weight(1f) فقط تا بالای تبلیغ جا می‌گیرد (تبلیغ هرگز روی جدول نمی‌آید)
+            // v2.4: پدینگِ پایین = مجموعِ ارتفاعِ پنل‌های باز (نوارِ سؤال و/یا کیبورد؛
+            // هر کدام ثابت ۱/۱۰ صفحه) تا لاینِ فعال بالای پنل‌ها دیده شود
             val gridBottomInset by androidx.compose.animation.core.animateDpAsState(
-                targetValue = if (viewModel.isKeyboardVisible && viewModel.activeWord != null)
-                    questionBarHeightDp else 0.dp,
+                targetValue = if (viewModel.activeWord != null) {
+                    var inset = 0.dp
+                    if (viewModel.isQuestionBarVisible) inset += panelHeightDp
+                    if (viewModel.isKeyboardVisible) inset += panelHeightDp
+                    inset
+                } else 0.dp,
                 animationSpec = tween(200)
             )
             Box(
@@ -222,51 +234,66 @@ fun GameScreen(viewModel: PuzzleViewModel) {
             Spacer(modifier = Modifier.navigationBarsPadding())
         }
 
-        // ─────────── نوارِ سؤال + کیبورد — یک واحدِ متحرک (overlay از پایین) ───────────
-        // با هم می‌آیند، با هم می‌روند؛ هنگامِ باز بودن رویِ جایگاهِ تبلیغِ همسان
-        // می‌نشینند (جایِ بیشتری برای جدول) و با بسته شدن دوباره تبلیغ پیدا می‌شود.
-        Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-            Column(modifier = Modifier.align(Alignment.BottomCenter)) {
-                AnimatedVisibility(
-                    visible = viewModel.isKeyboardVisible && viewModel.activeWord != null,
-                    enter = slideInVertically(animationSpec = tween(220)) { it } + fadeIn(tween(220)),
-                    exit = slideOutVertically(animationSpec = tween(180)) { it } + fadeOut(tween(180))
-                ) {
-                    Column {
-                        QuestionBar(
-                            word = viewModel.activeWord,
-                            onHeightChanged = { questionBarHeightPx.floatValue = it.toFloat() }
-                        )
-
-                        // ─────────── کیبورد ───────────
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onSizeChanged { keyboardHeightPx.floatValue = it.height.toFloat() }
-                                .shadow(12.dp, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
-                                .background(
-                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
-                                    shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                    shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
-                                )
-                                .padding(horizontal = 6.dp, vertical = 8.dp)
-                        ) {
-                            PersianOnScreenKeyboard(
-                                word = viewModel.activeWord,
-                                onCharTyped = { viewModel.onKeyPressed(it) },
-                                onBackspace = { viewModel.onBackspacePressed() }
-                            )
-                        }
-                    }
-                }
-
-                // نوارِ سیستم (نویگیشن‌بار) یک‌بار — زیرِ کلِ پنل (نوارِ سؤال + کیبورد)
-                Spacer(Modifier.navigationBarsPadding())
+        // ─────────── پنل‌های پایین (v2.4): نوارِ سؤال و کیبورد — دو پنلِ مستقل ───────────
+        // هر دو اندازه‌ای ثابت و برابر دارند (۱/۱۰ ارتفاع صفحه، تمامِ عرض) و رویِ
+        // جایگاهِ تبلیغِ همسان می‌نشینند؛ تبلیغ همیشه پایین جا دارد و زنده می‌ماند.
+        //   • کلیک روی خانهٔ سؤال → فقط نوارِ سؤال بالا می‌آید
+        //   • کلیک روی لاین (خانهٔ حرف‌دار) → فقط کیبورد بالا می‌آید
+        //   • دکمهٔ «کیبورد» در نوارِ سؤال → کیبورد هم روی همان لاین باز می‌شود
+        //   • جابه‌جا کردن جدول → هر دو محو می‌شوند (فقط تبلیغ همسان می‌ماند)
+        Column(modifier = Modifier.align(Alignment.BottomCenter)) {
+            // ۱) نوارِ سؤال — فقط با کلیک روی خانهٔ سؤال بالا می‌آید
+            AnimatedVisibility(
+                visible = viewModel.isQuestionBarVisible && viewModel.activeWord != null,
+                enter = expandVertically(animationSpec = tween(220)) + fadeIn(tween(220)),
+                exit = shrinkVertically(animationSpec = tween(180)) + fadeOut(tween(180))
+            ) {
+                QuestionBar(
+                    word = viewModel.activeWord,
+                    panelHeight = panelHeightDp,
+                    isKeyboardVisible = viewModel.isKeyboardVisible,
+                    onKeyboardToggle = {
+                        if (viewModel.isKeyboardVisible) viewModel.hideKeyboardPanel()
+                        else viewModel.showKeyboardFromQuestionBar()
+                    },
+                    onHeightChanged = { questionBarHeightPx.floatValue = it.toFloat() }
+                )
             }
+
+            // ۲) کیبورد — فقط با کلیک روی لاین یا دکمهٔ «کیبورد» (اسلاید از پایین)
+            AnimatedVisibility(
+                visible = viewModel.isKeyboardVisible && viewModel.activeWord != null,
+                enter = slideInVertically(animationSpec = tween(220)) { it } + fadeIn(tween(220)),
+                exit = slideOutVertically(animationSpec = tween(180)) { it } + fadeOut(tween(180))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(panelHeightDp)
+                        .onSizeChanged { keyboardHeightPx.floatValue = it.height.toFloat() }
+                        .shadow(12.dp, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+                            shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                            shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 5.dp)
+                ) {
+                    PersianOnScreenKeyboard(
+                        word = viewModel.activeWord,
+                        onCharTyped = { viewModel.onKeyPressed(it) },
+                        onBackspace = { viewModel.onBackspacePressed() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+
+            // نوارِ سیستم (نویگیشن‌بار) — زیرِ کلِ پنل‌ها
+            Spacer(Modifier.navigationBarsPadding())
         }
     } // پایان Box ریشه
 
@@ -389,19 +416,26 @@ private fun QuestionCard(
 }
 
 /**
- * نوارِ سؤالِ پایینِ صفحه (قاعدهٔ v1.9 کاربر):
- * همیشه بالای کیبورد می‌نشیند و سؤالِ «لاینِ فعال» را نشان می‌دهد —
- * هر لاینی که رویش هستیم، سؤالش اینجا دیده می‌شود (تک‌سؤالی/دوسؤالی یکسان).
+ * نوارِ سؤالِ پایینِ صفحه (بازطراحیِ v2.4 — قاعدهٔ کاربر):
+ * پنلِ ثابتِ هم‌اندازهٔ کیبورد (۱/۱۰ ارتفاع صفحه، تمامِ عرض) که رویِ تبلیغِ همسان
+ * می‌نشیند و فقط با کلیک روی خانهٔ سؤال بالا می‌آید.
+ *  • محتوا: بَجِ جهت (افقی/عمودی) + بَج «مربوط به عکس» + تعداد حروف + متنِ سؤال
+ *    (اگر بلند باشد داخلِ خودِ نوار اسکرول می‌شود)
+ *  • گوشهٔ چپِ نوار: دکمهٔ «کیبورد» — کلیک → کیبورد بالای همان لاین باز/بسته می‌شود
  */
 @Composable
 fun QuestionBar(
     word: SharhWord?,
+    panelHeight: Dp,
+    isKeyboardVisible: Boolean,
+    onKeyboardToggle: () -> Unit,
     onHeightChanged: (Int) -> Unit
 ) {
     if (word == null) return
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(panelHeight)
             .onSizeChanged { onHeightChanged(it.height) }
             .shadow(12.dp, RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
             .background(
@@ -413,22 +447,123 @@ fun QuestionBar(
                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
             )
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 132.dp)
-                .verticalScroll(rememberScrollState())
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            QuestionCard(
-                directionLabel = if (word.isHorizontal) "افقی" else "عمودی",
-                text = word.clue,
-                length = word.length,
-                isPhoto = word.isPhoto,
-                onClick = null
-            )
+            // بَج‌ها + متنِ سؤال (اسکرول‌پذیر داخلِ نوار)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(vertical = 2.dp)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    QuestionBadge(
+                        text = if (word.isHorizontal) "افقی" else "عمودی",
+                        isPhoto = false
+                    )
+                    if (word.isPhoto) {
+                        QuestionBadge(text = "مربوط به عکس", isPhoto = true)
+                    }
+                    QuestionBadge(
+                        text = "${word.length.toString().toPersianDigits()} حرف",
+                        isPhoto = false,
+                        neutral = true
+                    )
+                }
+                Spacer(Modifier.height(3.dp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = word.clue,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontSize = 15.sp,
+                            lineHeight = 21.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        fontFamily = PersianFontFamily
+                    )
+                }
+            }
+
+            Spacer(Modifier.width(10.dp))
+
+            // دکمهٔ «کیبورد» — گوشهٔ چپِ نوار (انتهای ردیف در RTL)؛ کلیک → باز/بسته شدن کیبورد
+            Row(
+                modifier = Modifier
+                    .clickable { onKeyboardToggle() }
+                    .background(
+                        if (isKeyboardVisible) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.primary.copy(
+                            alpha = if (isKeyboardVisible) 1f else 0.4f
+                        ),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Keyboard,
+                    contentDescription = null,
+                    tint = if (isKeyboardVisible) MaterialTheme.colorScheme.onPrimary
+                    else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(17.dp)
+                )
+                Text(
+                    text = "کیبورد",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 13.sp,
+                        color = if (isKeyboardVisible) MaterialTheme.colorScheme.onPrimary
+                        else MaterialTheme.colorScheme.primary
+                    ),
+                    fontFamily = PersianFontFamily
+                )
+            }
         }
+    }
+}
+
+/** بَج کوچک (جهت / مربوط به عکس / تعداد حروف) داخل نوارِ سؤالِ v2.4 */
+@Composable
+private fun QuestionBadge(text: String, isPhoto: Boolean, neutral: Boolean = false) {
+    val bg = when {
+        isPhoto -> Color(0xFFE8590C).copy(alpha = 0.14f)
+        neutral -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
+        else -> Color(0xFF0096C7).copy(alpha = 0.12f)
+    }
+    val fg = when {
+        isPhoto -> Color(0xFFD9480F)
+        neutral -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+        else -> Color(0xFF0077B6)
+    }
+    Box(
+        modifier = Modifier
+            .background(bg, RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = fg, fontWeight = FontWeight.ExtraBold, fontSize = 10.sp
+            ),
+            fontFamily = PersianFontFamily
+        )
     }
 }
 
@@ -659,7 +794,7 @@ fun OnboardingDialog(viewModel: PuzzleViewModel) {
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = "۲) روی خانهٔ سرنخ (آبی یا نارنجی) کلیک کنی، لاین همان سؤال انتخاب می‌شود و کیبورد همراهِ نوارِ سؤال از پایینِ صفحه بالا می‌آید؛ سؤالِ کاملِ همان لاین رویِ کیبورد دیده می‌شود در خانهٔ دوسؤالی، کلیکِ اول سؤالِ افقی و کلیکِ بعدی سؤالِ عمودی را نشان می‌دهد. سؤال‌های نارنجی مربوط به فردِ داخل عکس‌اند.",
+                    text = "۲) روی خانهٔ سرنخ (آبی یا نارنجی) کلیک کنی، لاین همان سؤال انتخاب می‌شود و نوارِ سؤال از پایینِ صفحه بالا می‌آید؛ با دکمهٔ «کیبورد» در گوشهٔ نوار یا کلیک روی خانه‌های حرف‌دارِ همان لاین، کیبورد باز می‌شود. در خانهٔ دوسؤالی، کلیکِ اول سؤالِ افقی و کلیکِ بعدی سؤالِ عمودی را نشان می‌دهد. سؤال‌های نارنجی مربوط به فردِ داخل عکس‌اند.",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
