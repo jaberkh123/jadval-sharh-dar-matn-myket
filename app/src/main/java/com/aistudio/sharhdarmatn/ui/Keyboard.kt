@@ -29,13 +29,14 @@ import com.aistudio.sharhdarmatn.ui.theme.LocalDarkTheme
 import kotlinx.coroutines.delay
 
 /**
- * کیبورد فارسی روی‌صفحه (بازطراحیِ v2.4 — قاعدهٔ کاربر):
- * به‌جای ۱۵ حرف، ۱۱ حرف در «یک ردیفِ واحد» + کلید حذف — با فونتِ بزرگ‌تر (۲۲sp).
+ * کیبورد فارسی روی‌صفحه (بازطراحیِ v2.5 — قاعدهٔ کاربر):
+ * «حالتِ کیبورد خوب نیست؛ دوطبقه باشه» → ۱۱ حرف در «دو طبقه» (۶ حرف ردیفِ اول +
+ * ۵ حرف و کلیدِ حذف ردیفِ دوم) — کلیدها پهن‌تر و فونتِ بزرگ‌تر (۲۴sp).
  * حداکثر حروفِ یکتای جواب‌های بازی ۷ است، پس ۱۱ همیشه تمام حروفِ لاین را پوشش می‌دهد
  * (اگر روزی جوابی حروفِ یکتای بیشتری داشت، خودکار تعداد بیشتر می‌شود).
- * کلیدها ارتفاعِ پنلِ ثابتِ کیبورد (۱/۱۰ صفحه) را پر می‌کنند.
- * کیبورد فقط وقتی روی یک لاین کلیک شود نمایش داده می‌شود (پنلِ آن را GameScreen
- * به‌صورت overlay روی تبلیغِ همسان نشان می‌دهد).
+ * کلیدها ارتفاعِ پنلِ ثابتِ کیبورد (۱/۱۰ صفحه — هم‌اندازهٔ تبلیغِ همسان و نوارِ سؤال)
+ * را بینِ دو ردیف تقسیم می‌کنند. کیبورد داخلِ «اسلاتِ ثابتِ» پایین صفحه جابه‌جا می‌شود:
+ * کلیک روی لاین → کیبورد؛ کلیک روی خانهٔ سؤال → نوارِ سؤال؛ حالت عادی → تبلیغ همسان.
  */
 @Composable
 fun PersianOnScreenKeyboard(
@@ -64,7 +65,7 @@ fun PersianOnScreenKeyboard(
             ?.toSet() ?: emptySet()
     }
 
-    // تولید حروفِ کیبورد (v2.4): هدف ۱۱ حرف — حداکثر حروفِ یکتای جواب‌ها ۷ است
+    // تولید حروفِ کیبورد (v2.5): هدف ۱۱ حرف در دو طبقه — حداکثر حروفِ یکتای جواب‌ها ۷ است
     val targetCount = maxOf(11, answerChars.size)
     val keyboardLetters = remember(word?.id, word?.word) {
         val list = mutableListOf<Char>()
@@ -86,22 +87,36 @@ fun PersianOnScreenKeyboard(
         list.take(targetCount).shuffled(random)
     }
 
-    // v2.4: یک ردیفِ واحد — ۱۱ کلیدِ حرف + کلیدِ حذف (سمتِ چپ)؛ فونتِ بزرگ‌تر
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    // v2.5: دو طبقه — ۱۱ کلیدِ حرف + کلیدِ حذف (پایانِ ردیفِ دوم)؛ فونتِ بزرگ‌تر
+    // ردیفِ اول ۶ حرف، ردیفِ دوم ۵ حرف + حذف → دو ردیفِ متقارنِ ۶تایی
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        for (char in keyboardLetters) {
-            KeyboardKey(char = char, onClick = { onCharTyped(char) }, modifier = Modifier.weight(1f))
+        val rows = keyboardLetters.chunked(6)
+        rows.forEachIndexed { index, rowChars ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                for (char in rowChars) {
+                    KeyboardKey(char = char, onClick = { onCharTyped(char) }, modifier = Modifier.weight(1f))
+                }
+                // کلیدِ حذف فقط در انتهای ردیفِ آخر (سمتِ چپ در RTL)
+                if (index == rows.lastIndex) {
+                    KeyboardActionKey(
+                        icon = Icons.Default.Close,
+                        contentDescription = "حذف حرف",
+                        onClick = onBackspace,
+                        modifier = Modifier.weight(1f),
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
+                    )
+                }
+            }
         }
-        KeyboardActionKey(
-            icon = Icons.Default.Close,
-            contentDescription = "حذف حرف",
-            onClick = onBackspace,
-            modifier = Modifier.weight(1f),
-            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.7f)
-        )
     }
 }
 
@@ -141,7 +156,7 @@ fun KeyboardKey(char: Char, onClick: () -> Unit, modifier: Modifier = Modifier) 
     ) {
         Text(
             text = if (char == ' ') "␣" else char.toString(),
-            fontSize = 22.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
@@ -193,7 +208,7 @@ fun KeyboardActionKey(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(26.dp)
         )
     }
 }

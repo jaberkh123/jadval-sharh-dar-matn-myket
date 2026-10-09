@@ -174,10 +174,10 @@ fun SharhGrid(
             val gridWidth = cellSize * puzzle.cols
             val gridHeight = cellSize * puzzle.rows
 
-            // قاعدهٔ کاربر: وقتی کیبورد باز است همیشه باید بشود جدول را بالا کشید —
-            // حتی اگر جدول در فضای خالی جا شود (اتاقِ اسکرول زیر جدول اضافه می‌شود)
+            // v2.5: کیبورد داخلِ اسلاتِ ثابتِ زیرِ جدول است و هرگز جدول را نمی‌پوشاند —
+            // پس فقط وقتی محتوا واقعاً بزرگ‌تر از دید است اسکرول/پن فعال می‌شود
             val isScrollableActive =
-                gridWidth > maxWidth || gridHeight > maxHeight || zoomF > 1.001f || viewModel.isKeyboardVisible
+                gridWidth > maxWidth || gridHeight > maxHeight || zoomF > 1.001f
 
             val containerModifier = if (isScrollableActive) {
                 Modifier.fillMaxSize()
@@ -205,24 +205,19 @@ fun SharhGrid(
                 kotlinx.coroutines.delay(80) // فرصت چیدمان
 
                 val cellPx = with(density) { cellSize.toPx() }
-                // v2.4: viewportِ جدول به‌واسطهٔ paddingِ پنل‌ها (نوار سؤال/کیبورد) خودش
-                // کوچک شده؛ دیگر ارتفاع کیبورد از آن کم نمی‌شود (وگرنه دوبار کسر می‌شد)
+                // v2.5: viewportِ جدول ثابت است (اسلاتِ پایین همیشه هم‌اندازه است و
+                // کیبورد جدول را نمی‌پوشاند) — پس ارتفاعِ دید همان ارتفاعِ خودِ جدول‌خانه است
                 val visibleH = viewportHpx.coerceAtLeast(cellPx)
                 val marginPx = with(density) { 6.dp.toPx() }
-                // فضای تنفس: حدود یک خانه بالای کیبورد و لبه‌های چپ/راست —
-                // «صفحه یکم بیاید بالاتر حتی اگر فضای خالی باشد»
+                // فضای تنفسِ لبه‌ها — «بینِ جدول و اسلاتِ پایین فضای خالیِ زیاد نباشد»
                 val breathe = cellPx * 0.9f
-                // قاعدهٔ v1.7 کاربر: لاینِ سؤال «اندکی بالاتر» از کیبورد بایستد تا کاربر
-                // خانهٔ سرنخِ کنار لاین و تعداد حروف را ببیند (بالای کیبورد ~۲ خانه فضا)
-                val bottomGap = cellPx * 1.8f
+                // فاصلهٔ ملایمِ لاینِ فعال از لبهٔ پایینِ دید (بالای اسلاتِ ثابت)
+                val bottomGap = cellPx * 0.9f
 
                 val curLeft = hScroll.value.toFloat()
                 val curTop = vScroll.value.toFloat()
-                // اتاقِ اسکرولِ زیر جدول (فقط وقتی کیبورد باز است) — هماهنگ با bottomGapِ v1.7
-                val kbH = if (viewModel.isKeyboardVisible) keyboardHeightPx.floatValue else 0f
-                val kbRoomPx = if (viewModel.isKeyboardVisible)
-                    kbH + with(density) { (cellSize * 1.8f).toPx() } else 0f
-                val contentHpx = with(density) { gridHeight.toPx() } + kbRoomPx
+                // v2.5: «اتاقِ اسکرولِ زیرِ جدول» حذف شد — کیبورد دیگر رویِ جدول نمی‌آید
+                val contentHpx = with(density) { gridHeight.toPx() }
                 val maxScrollX = with(density) { gridWidth.toPx() - viewportWpx }.coerceAtLeast(0f)
                 val maxScrollY = (contentHpx - viewportHpx).coerceAtLeast(0f)
 
@@ -330,7 +325,7 @@ fun SharhGrid(
                                 }
                             )
                     ) {
-                        // محتوای اسکرول‌پذیر: «جدول + عکس» و اتاقِ اسکرولِ زیرِ آن وقتی کیبورد باز است؛
+                        // محتوای اسکرول‌پذیر: «جدول + عکس»؛
                         // CenterHorizontally تا جدولِ باریک‌تر از صفحه وسط‌چین بماند
                         Column(
                             modifier = (if (isScrollableActive) Modifier.widthIn(min = vpMinWidth) else Modifier)
@@ -464,17 +459,6 @@ fun SharhGrid(
                             }
                         }
                             } // پایانِ Boxِ «جدول + عکس»
-                            // اتاقِ اسکرولِ زیرِ جدول — فقط وقتی کیبورد باز است؛
-                            // «حتی اگر فضای خالی باشد صفحه یکم بالا می‌آید»
-                            if (viewModel.isKeyboardVisible && keyboardHeightPx.floatValue > 0f) {
-                                Spacer(
-                                    Modifier.height(
-                                        with(density) {
-                                            (keyboardHeightPx.floatValue + cellSize.toPx() * 1.8f).toDp()
-                                        }
-                                    )
-                                )
-                            }
                         } // پایانِ Columnِ اسکرول‌پذیر
                     }
                 }

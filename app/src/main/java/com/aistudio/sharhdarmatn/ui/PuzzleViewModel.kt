@@ -86,7 +86,7 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
         private set
 
     /**
-     * v2.4 — نوارِ سؤال مستقل از کیبورد است:
+     * v2.4 — نوارِ سؤال مستقل از کی‌بورد است:
      *  • کلیک روی خانهٔ سؤال (سرنخ) → فقط نوارِ سؤال بالا می‌آید (بدون کیبورد)
      *  • کلیک روی خانهٔ حرف‌دار (لاین) → فقط کیبورد بالا می‌آید
      *  • دکمهٔ «کیبورد» روی نوارِ سؤال → کیبورد هم بالای همان لاین باز می‌شود
@@ -352,7 +352,7 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
         activeCol = col
         lastDirection = newWord.direction
 
-        // ✨ v2.4: کلیک روی لاین → «فقط» کیبورد (نوارِ سؤال جمع می‌شود)
+        // ✨ v2.5: کلیک روی لاین → کیبوردِ دوطبقه جای تبلیغِ همسان در اسلات می‌نشیند
         isKeyboardVisible = true
         isQuestionBarVisible = false
     }
@@ -393,23 +393,23 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
         activeCol = chosen.cells.first().second
         lastDirection = chosen.direction
 
-        // ✨ v2.4: کلیک روی سؤال → «فقط» نوارِ سؤال (کیبورد جمع می‌شود؛ با دکمهٔ
-        // «کیبورد» روی نوار یا کلیک روی لاین باز می‌شود)
+        // ✨ v2.5: کلیک روی سؤال → نوارِ سؤال جای تبلیغِ همسان در اسلات می‌نشیند
+        // (با دکمهٔ «کیبورد» روی نوار یا کلیک روی لاین، کیبورد جای آن می‌نشیند)
         isKeyboardVisible = false
         isQuestionBarVisible = true
     }
 
     /**
-     * v2.4 — دکمهٔ «کیبورد» روی نوارِ سؤال: کیبورد را بالای همان لاین باز می‌کند؛
-     * نوارِ سؤال سر جایش می‌ماند (هر دو روی تبلیغ همسان می‌نشینند).
+     * v2.5 — دکمهٔ «کیبورد» روی نوارِ سؤال: کیبوردِ دوطبقه «جای» نوارِ سؤال در
+     * اسلاتِ ثابتِ پایین می‌نشیند (هر سه پنل هم‌اندازه‌اند و جابه‌جا می‌شوند؛
+     * جدول بالای اسلات همیشه هم‌اندازه می‌ماند).
+     * بازگشت به سؤال: کلیک دوباره روی خانهٔ سؤال (onClueCellClicked).
      */
     fun showKeyboardFromQuestionBar() {
-        if (activeWord != null) isKeyboardVisible = true
-    }
-
-    /** v2.4 — دکمهٔ «کیبورد» وقتی کیبورد باز است (بستنِ فقط کیبورد؛ نوارِ سؤال می‌ماند) */
-    fun hideKeyboardPanel() {
-        isKeyboardVisible = false
+        if (activeWord != null) {
+            isQuestionBarVisible = false
+            isKeyboardVisible = true
+        }
     }
 
     /** شمارهٔ جدولِ فعال در فهرست (۱-بنیاد) — برای نمایشِ «جدول ۳» بدونِ لو رفتنِ نام */
@@ -417,8 +417,8 @@ class PuzzleViewModel(application: Application) : AndroidViewModel(application) 
         activePuzzle?.let { p -> SharhPuzzleData.puzzles.indexOfFirst { it.id == p.id } + 1 } ?: 0
 
     /**
-     * وقتی کاربر جدول را اسکرول/جابه‌جا می‌کند، کی‌بورد محو می‌شود.
-     * از GameScreen (ژست درگ/پینچ) صدا زده می‌شود.
+     * وقتی کاربر جدول را اسکرول/جابه‌جا می‌کند، نوارِ سؤال و کیبورد هر دو محو و
+     * اسلاتِ پایین به حالتِ عادی (تبلیغِ همسان) برمی‌گردد. از GameScreen/جدول صدا زده می‌شود.
      */
     fun hideKeyboard() {
         if (isKeyboardVisible) isKeyboardVisible = false

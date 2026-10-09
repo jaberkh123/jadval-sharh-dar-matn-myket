@@ -216,13 +216,13 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                     )
                 }
 
-                // دکمهٔ «ادامهٔ جدول» — کوچک‌تر از شهر جدول: ردیف فشردهٔ ۶۴dp
+                // دکمهٔ «ادامهٔ جدول» — v2.5: بزرگ‌تر و وسط‌چین (قاعدهٔ کاربر)
                 if (canContinue && lastPuzzle != null) {
                     val solved = solvedCount
                     Card(
                         modifier = Modifier
-                            .fillMaxWidth(0.72f)
-                            .height(64.dp)
+                            .fillMaxWidth(0.9f)
+                            .height(72.dp)
                             .shadow(4.dp, RoundedCornerShape(18.dp))
                             .clip(RoundedCornerShape(18.dp))
                             .clickable {
@@ -248,7 +248,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(38.dp)
                                     .background(Color.White.copy(alpha = 0.22f), CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -256,7 +256,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                                     imageVector = Icons.Default.PlayArrow,
                                     contentDescription = "ادامهٔ جدول",
                                     tint = Color.White,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
                             Spacer(Modifier.width(12.dp))
@@ -266,7 +266,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                                     style = MaterialTheme.typography.titleSmall.copy(
                                         fontWeight = FontWeight.ExtraBold,
                                         color = Color.White,
-                                        fontSize = 15.sp
+                                        fontSize = 17.sp
                                     ),
                                     fontFamily = PersianFontFamily
                                 )
@@ -274,7 +274,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                                     text = "${solved.toString().toPersianDigits()} از ${lastPuzzle.words.size.toString().toPersianDigits()} واژه حل شده",
                                     style = MaterialTheme.typography.labelSmall.copy(
                                         color = Color.White.copy(alpha = 0.85f),
-                                        fontSize = 11.sp
+                                        fontSize = 12.sp
                                     ),
                                     fontFamily = PersianFontFamily
                                 )
@@ -283,7 +283,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                                 imageVector = Icons.Default.ChevronLeft,
                                 contentDescription = null,
                                 tint = Color.White.copy(alpha = 0.8f),
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }
@@ -295,11 +295,11 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
 
             Spacer(Modifier.height(14.dp))
 
-            // ── دکمهٔ اصلی: ورود به بازی ──
+            // ── دکمهٔ اصلی: ورود به بازی — v2.5: بزرگ‌تر، وسط‌چین با محتوای وسط‌چین ──
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(0.72f)
-                    .height(76.dp)
+                    .fillMaxWidth(0.9f)
+                    .height(88.dp)
                     .shadow(6.dp, RoundedCornerShape(20.dp))
                     .clickable {
                         SoundManager.playClick()
@@ -312,35 +312,25 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "ورود به بازی",
-                            textAlign = TextAlign.Center,
-                            fontFamily = PersianFontFamily,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 18.sp
-                            )
+                    Text(
+                        text = "ورود به بازی",
+                        textAlign = TextAlign.Center,
+                        fontFamily = PersianFontFamily,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 20.sp
                         )
-                        Text(
-                            text = "انتخاب جدول و شروع چالش",
-                            textAlign = TextAlign.Center,
-                            fontFamily = PersianFontFamily,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
-                                fontWeight = FontWeight.Normal,
-                                fontSize = 11.sp
-                            )
-                        )
-                    }
+                    )
+
+                    Spacer(Modifier.width(14.dp))
 
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(48.dp)
                             .background(Color.White.copy(alpha = 0.2f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
@@ -348,7 +338,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(30.dp)
                         )
                     }
                 }
@@ -356,11 +346,11 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
 
             Spacer(Modifier.height(10.dp))
 
-            // ── دکمهٔ خروج (ثانویه — مثل شهر جدول) ──
+            // ── دکمهٔ خروج (ثانویه — v2.5: بزرگ‌تر و وسط‌چین) ──
             Card(
                 modifier = Modifier
-                    .fillMaxWidth(0.72f)
-                    .height(56.dp)
+                    .fillMaxWidth(0.9f)
+                    .height(64.dp)
                     .clickable { (context as? android.app.Activity)?.finish() },
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 shape = RoundedCornerShape(16.dp),
@@ -375,7 +365,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                         imageVector = Icons.Default.ExitToApp,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -383,7 +373,8 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                         fontFamily = PersianFontFamily,
                         style = MaterialTheme.typography.titleSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.error
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 16.sp
                         )
                     )
                 }
@@ -403,7 +394,7 @@ fun LandingScreen(viewModel: PuzzleViewModel) {
                 fontFamily = PersianFontFamily
             )
             Text(
-                text = "نسخه ۲٫۴".toPersianDigits(),
+                text = "نسخه ۲٫۵".toPersianDigits(),
                 textAlign = TextAlign.Center,
                 fontFamily = PersianFontFamily,
                 style = MaterialTheme.typography.bodySmall.copy(
@@ -776,7 +767,7 @@ fun SettingsScreen(viewModel: PuzzleViewModel) {
         Spacer(Modifier.weight(1f))
 
         Text(
-            text = "شرح در متن مشاهیر | نسخه ۲٫۴",
+            text = "شرح در متن مشاهیر | نسخه ۲٫۵",
             style = MaterialTheme.typography.bodySmall.copy(
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             ),
@@ -869,11 +860,11 @@ fun HelpScreen(viewModel: PuzzleViewModel) {
             "خانه‌های آبیِ هاشوردار فقط جداکننده‌اند و حرف و سؤالی ندارند.",
             "روی خانه‌های آبیِ روشنِ دوسؤالی دو سرنخ قرار دارد: نیمهٔ بالایی سرنخِ افقی و نیمهٔ پایینی سرنخِ عمودی است که با خط‌چین از هم جدا شده‌اند.",
             "خانه‌ها و سؤال‌های نارنجیِ ملایم، همه سؤال‌های موضوعیِ فردِ داخلِ عکس‌اند؛ اگر آن لاین‌ها را درست حل کنی، تمام رازهای زندگیِ شخصِ عکس پیدا می‌شود.",
-            "با کلیک روی خانهٔ سؤال، فقط نوارِ سؤال از پایینِ صفحه بالا می‌آید و سؤالِ همان لاین را نشان می‌دهد؛ با کلیک روی خانهٔ حرف‌دار (لاین)، فقط کی‌بورد بالا می‌آید.",
+            "با کلیک روی خانهٔ سؤال، نوارِ سؤال در اسلاتِ پایینِ صفحه (جای تبلیغِ همسان) بالا می‌آید و سؤالِ همان لاین را نشان می‌دهد؛ با کلیک روی خانهٔ حرف‌دار (لاین)، کی‌بوردِ دوطبقه جای آن در همان اسلات می‌نشیند.",
             "روی خانهٔ سرنخ کلیک کنید تا لاینِ همان سؤال انتخاب شود؛ در خانه‌های دوسؤالی، کلیکِ اول سؤالِ افقی و کلیکِ دوباره سؤالِ عمودی را نشان می‌دهد.",
-            "روی هر خانهٔ حرف‌دار کلیک کنید تا کی‌بورد در پایین صفحه باز شود. کی‌بورد همیشه حروفِ همان لاین انتخاب‌شده را دارد.",
-            "اگر نوارِ سؤال یا کی‌بورد روی لاینِ انتخاب‌شده بیفتد، جدول خودکار کمی جابه‌جا می‌شود تا لاین بالای آن‌ها دیده شود؛ این دو پنل هرگز لاینِ جواب را نمی‌پوشانند.",
-            "با جابه‌جا کردن جدول، نوارِ سؤال و کی‌بورد محو می‌شوند و صفحه به حالت عادی (فقط تبلیغِ پایین) برمی‌گردد؛ دکمهٔ «کیبورد» در گوشهٔ نوارِ سؤال هم کیبورد را روی همان لاین باز می‌کند.",
+            "روی هر خانهٔ حرف‌دار کلیک کنید تا کی‌بوردِ دوطبقه در اسلاتِ پایین جای تبلیغ را بگیرد. کی‌بورد همیشه حروفِ همان لاین انتخاب‌شده را دارد.",
+            "نوارِ سؤال، کی‌بورد و تبلیغِ همسان هر سه هم‌اندازه‌اند و در یک اسلاتِ ثابتِ پایین صفحه جابه‌جا می‌شوند؛ چون ارتفاعِ اسلات ثابت است، اندازهٔ جدول هیچ‌وقت تغییر نمی‌کند و فضای خالی هم بین جدول و اسلات باز نمی‌شود.",
+            "با جابه‌جا کردن جدول، نوارِ سؤال و کی‌بورد محو می‌شوند و اسلات به حالت عادی (تبلیغِ همسان) برمی‌گردد؛ دکمهٔ «کیبورد» در گوشهٔ نوارِ سؤال هم کیبورد را جای همان نوار می‌نشاند.",
             "عکسِ بالای جدول بخشی از سرنخ‌های موضوعی است؛ به آن دقت کنید.",
             "با دکمه‌های بزرگ‌نمایی یا حرکت دو انگشت (پینچ) می‌توانید جدول را زوم کنید.",
             "حروف درست به رنگ آبی و حروف اشتباه به رنگ قرمز نمایش داده می‌شوند."
